@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Full-Day Weather Forecast</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: linear-gradient(to right, #74ebd5, #ACB6E5);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 50px;
+    }
+
+    h1 {
+      color: #333;
+    }
+
+    .input-group {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    input {
+      padding: 10px;
+      width: 220px;
+      border-radius: 5px;
+      border: none;
+    }
+
+    button {
+      padding: 10px 15px;
+      border: none;
+      border-radius: 5px;
+      background-color: #333;
+      color: white;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #555;
+    }
+
+    #weatherResult {
+      margin-top: 30px;
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      width: 350px;
+      text-align: center;
+      box-shadow: 0px 0px 10px rgba(0,0,0,0.2);
+      display: none;
+    }
+
+    .forecast-item {
+      background: #f1f1f1;
+      margin: 10px 0;
+      padding: 10px;
+      border-radius: 8px;
+      text-align: left;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>🌤️ Weather Forecast</h1>
+
+  <div class="input-group">
+    <input type="text" id="cityInput" placeholder="Enter city name" />
+    <button onclick="getWeather()">Get Forecast</button>
+  </div>
+
+  <div id="weatherResult"></div>
+
+  <script>
+    function getWeather() {
+      const city = document.getElementById("cityInput").value.trim();
+      if (!city) return;
+
+      const forecastUrl = `/get-weather?city=${encodeURIComponent(city)}`;
+      const resultDiv = document.getElementById("weatherResult");
+
+      resultDiv.innerHTML = "";
+      resultDiv.style.display = "none";
+
+      fetch(forecastUrl)
+        .then(response => response.json())
+        .then(data => {
+          if (data.cod !== "200") {
+            resultDiv.innerHTML = "<p>❌ City not found</p>";
+            resultDiv.style.display = "block";
+            return;
+          }
+
+          const today = new Date().toISOString().split("T")[0];
+          const todayForecasts = data.list.filter(item => item.dt_txt.startsWith(today));
+
+          let content = `<h2>📅 Forecast for ${data.city.name}, ${data.city.country}</h2>`;
+
+          if (todayForecasts.length === 0) {
+            content += `<p>No hourly data found for today</p>`;
+          } else {
+            todayForecasts.forEach(item => {
+              const time = new Date(item.dt * 1000).toLocaleTimeString([], {
+                hour: "2-digit", minute: "2-digit"
+              });
+              const temp = item.main.temp;
+              const desc = item.weather[0].description;
+
+              content += `
+                <div class="forecast-item">
+                  <strong>⏰ ${time}</strong><br>
+                  🌡️ Temp: ${temp} °C<br>
+                  ☁️ ${desc}
+                </div>
+              `;
+            });
+          }
+
+          resultDiv.innerHTML = content;
+          resultDiv.style.display = "block";
+        });
+    }
+  </script>
+
+</body>
+</html>
