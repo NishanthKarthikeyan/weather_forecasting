@@ -1,130 +1,736 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Full-Day Weather Forecast</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: linear-gradient(to right, #74ebd5, #ACB6E5);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 50px;
-    }
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Super Advanced Weather Forecast</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* General Styles */
+        body {
+            font-family: 'Poppins', sans-serif;
+            /* Enhanced gradient for better contrast with glass effects */
+            background: linear-gradient(135deg, #89a7f3 0%, #c1e8ff 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 30px 10px;
+            min-height: 100vh;
+            margin: 0;
+            color: #1a2a6c; /* Darker primary text color */
+        }
 
-    h1 {
-      color: #333;
-    }
+        h1 {
+            color: #1a2a6c;
+            margin-bottom: 20px;
+            font-size: 2.5em;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+        }
 
-    .input-group {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 20px;
-    }
+        /* Glassmorphism Containers */
+        .controls-panel, #weatherResult {
+            backdrop-filter: blur(10px); /* Frosted glass effect */
+            background: rgba(255, 255, 255, 0.5); /* Semi-transparent white */
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 20px;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+        }
 
-    input {
-      padding: 10px;
-      width: 220px;
-      border-radius: 5px;
-      border: none;
-    }
+        /* Controls Panel */
+        .controls-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-bottom: 30px;
+            padding: 25px;
+            position: relative; /* Needed for suggestions box positioning */
+        }
+        
+        .input-group, .toggle-group, .unit-group {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
 
-    button {
-      padding: 10px 15px;
-      border: none;
-      border-radius: 5px;
-      background-color: #333;
-      color: white;
-      cursor: pointer;
-    }
+        /* --- New Autocomplete Styles --- */
+        #searchContainer {
+            position: relative; /* Parent for suggestionsBox */
+        }
+        
+        #suggestionsBox {
+            position: absolute;
+            top: 100%; /* Position right below the input */
+            left: 0;
+            width: 100%;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 1000;
+            background: white;
+            border-radius: 5px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            text-align: left;
+            margin-top: 2px;
+            display: none;
+        }
 
-    button:hover {
-      background-color: #555;
-    }
+        #suggestionsBox ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
 
-    #weatherResult {
-      margin-top: 30px;
-      background: white;
-      padding: 20px;
-      border-radius: 10px;
-      width: 350px;
-      text-align: center;
-      box-shadow: 0px 0px 10px rgba(0,0,0,0.2);
-      display: none;
-    }
+        #suggestionsBox li {
+            padding: 10px 15px;
+            cursor: pointer;
+            border-bottom: 1px solid #eee;
+            color: #333;
+            font-size: 0.95em;
+        }
 
-    .forecast-item {
-      background: #f1f1f1;
-      margin: 10px 0;
-      padding: 10px;
-      border-radius: 8px;
-      text-align: left;
-    }
-  </style>
+        #suggestionsBox li:hover {
+            background-color: #f0f8ff;
+            color: #1a2a6c;
+        }
+        /* --- End New Autocomplete Styles --- */
+
+        input {
+            padding: 12px 15px;
+            width: 250px;
+            border-radius: 8px;
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            background: rgba(255, 255, 255, 0.8);
+            font-size: 1em;
+            color: #1a2a6c;
+            transition: border-color 0.3s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #4a90e2;
+            background: white;
+        }
+
+        button {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            background-color: #1a2a6c;
+            color: white;
+            cursor: pointer;
+            font-size: 1em;
+            transition: background-color 0.3s, transform 0.2s;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
+        }
+
+        button:hover {
+            background-color: #3b5998;
+            transform: translateY(-1px);
+        }
+
+        .toggle-button {
+            padding: 10px 15px;
+            background-color: rgba(255, 255, 255, 0.7);
+            color: #333;
+            border: 1px solid #ccc;
+            font-size: 0.9em;
+            transition: all 0.2s ease;
+        }
+
+        .toggle-button.active {
+            background-color: #4a90e2;
+            color: white;
+            border-color: #4a90e2;
+            transform: scale(1.05);
+        }
+
+        /* Result Area Styles */
+        #weatherResult {
+            margin-top: 20px;
+            padding: 30px;
+            width: 90%;
+            max-width: 800px;
+            text-align: center;
+            opacity: 0; 
+            transform: translateY(20px);
+            transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+            display: none;
+        }
+
+        #weatherResult.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        /* Current Summary Styles */
+        #currentSummary {
+            background-color: rgba(255, 255, 255, 0.8);
+            padding: 20px;
+            margin-bottom: 25px;
+            border-radius: 12px;
+            border-left: 5px solid #4a90e2;
+        }
+
+        #summaryGrid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px 30px; 
+        }
+        
+        .summary-line {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 5px 0;
+            font-size: 1em;
+            border-bottom: 1px dotted #ccc;
+        }
+        
+        .summary-line:last-child {
+            border-bottom: none;
+        }
+
+        /* Visual styling for high/low temps */
+        .temp-max-icon { color: #f04b4c; } /* Red for High */
+        .temp-min-icon { color: #4c66f0; } /* Blue for Low */
+
+        .wind-arrow {
+            display: inline-block;
+            transition: transform 0.5s;
+            margin-left: 5px;
+        }
+
+        /* Forecast Container Styles (Scroll Shadow UX) */
+        #forecastContainer {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 15px;
+            max-height: 400px; 
+            overflow-y: auto;
+            padding: 10px;
+            background-color: rgba(248, 248, 248, 0.5); 
+            border-radius: 10px;
+            
+            /* Scroll shadow effect */
+            box-shadow: inset 0 6px 6px -6px rgba(0,0,0,0.1), 
+                        inset 0 -6px 6px -6px rgba(0,0,0,0.1);
+        }
+        
+        .forecast-item {
+            background: white;
+            border: 1px solid rgba(224, 224, 224, 0.5);
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            flex: 1 1 120px;
+            min-width: 120px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            transition: transform 0.2s;
+        }
+        
+        .forecast-item:hover {
+             transform: translateY(-3px);
+             box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Daily forecast specific styles */
+        .day-forecast-item {
+            flex: 1 1 150px;
+            max-width: 180px;
+            border: 2px solid #a1c4fd;
+        }
+
+        .icon-large {
+            font-size: 2.5em;
+            color: #4a90e2;
+            margin: 10px 0;
+        }
+
+        .hourly-detail {
+            font-size: 0.85em;
+            color: #444; 
+            margin-top: 5px;
+            text-align: left;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        /* Footer Style */
+        footer {
+            margin-top: auto;
+            padding: 20px;
+            font-size: 0.9em;
+            color: #1a2a6c;
+            text-align: center;
+            opacity: 0.7;
+        }
+
+        /* Responsive Design for Summary Grid */
+        @media (max-width: 600px) {
+            #summaryGrid {
+                grid-template-columns: 1fr; 
+                gap: 5px 0;
+            }
+        }
+    </style>
 </head>
 <body>
 
-  <h1>🌤️ Weather Forecast</h1>
+    <h1><i class="fas fa-cloud-sun-rain"></i> Super Advanced Weather App</h1>
 
-  <div class="input-group">
-    <input type="text" id="cityInput" placeholder="Enter city name" />
-    <button onclick="getWeather()">Get Forecast</button>
-  </div>
+    <div class="controls-panel">
+        <div class="input-group">
+            
+            <div id="searchContainer">
+                <input type="text" id="cityInput" placeholder="Enter city name" />
+                <div id="suggestionsBox">
+                    </div>
+            </div>
 
-  <div id="weatherResult"></div>
+            <button onclick="getWeather()"><i class="fas fa-search"></i> Get Forecast</button>
+            <button onclick="getWeatherByGeolocation()" title="Get forecast for your current location"><i class="fas fa-location-arrow"></i> My Location</button>
+        </div>
 
-  <script>
-    function getWeather() {
-      const city = document.getElementById("cityInput").value.trim();
-      if (!city) return;
+        <div class="toggle-group" id="viewToggle" style="display:none;">
+            <button id="hourlyBtn" class="toggle-button active" onclick="setView('hourly')"><i class="far fa-clock"></i> Today (Hourly)</button>
+            <button id="dailyBtn" class="toggle-button" onclick="setView('daily')"><i class="far fa-calendar-alt"></i> 5-Day Summary</button>
+        </div>
 
-      const forecastUrl = `/get-weather?city=${encodeURIComponent(city)}`;
-      const resultDiv = document.getElementById("weatherResult");
+        <div class="unit-group" id="unitToggle" style="display:none;">
+            <button id="celsiusBtn" class="toggle-button active" onclick="setUnit('C')">°C</button>
+            <button id="fahrenheitBtn" class="toggle-button" onclick="setUnit('F')">°F</button>
+        </div>
+    </div>
 
-      resultDiv.innerHTML = "";
-      resultDiv.style.display = "none";
+    <div id="weatherResult"></div>
 
-      fetch(forecastUrl)
-        .then(response => response.json())
-        .then(data => {
-          if (data.cod !== "200") {
-            resultDiv.innerHTML = "<p>❌ City not found</p>";
-            resultDiv.style.display = "block";
-            return;
-          }
+    <footer>
+        <p>&copy; 2023 Super Advanced Weather App. Powered by Modern Web Technologies.</p>
+    </footer>
 
-          const today = new Date().toISOString().split("T")[0];
-          const todayForecasts = data.list.filter(item => item.dt_txt.startsWith(today));
+    <script>
+        let weatherData = null; 
+        let currentUnit = 'C';
+        let currentView = 'hourly';
 
-          let content = `<h2>📅 Forecast for ${data.city.name}, ${data.city.country}</h2>`;
+        const unitDisplay = {
+            'C': '°C',
+            'F': '°F'
+        };
 
-          if (todayForecasts.length === 0) {
-            content += `<p>No hourly data found for today</p>`;
-          } else {
-            todayForecasts.forEach(item => {
-              const time = new Date(item.dt * 1000).toLocaleTimeString([], {
-                hour: "2-digit", minute: "2-digit"
-              });
-              const temp = item.main.temp;
-              const desc = item.weather[0].description;
+        // Utility functions
+        function convertTemp(tempC, targetUnit) {
+            const temp = parseFloat(tempC);
+            if (isNaN(temp)) return 'N/A';
+            
+            if (targetUnit === 'F') {
+                return ((temp * 9 / 5) + 32).toFixed(1);
+            }
+            return temp.toFixed(1);
+        }
 
-              content += `
-                <div class="forecast-item">
-                  <strong>⏰ ${time}</strong><br>
-                  🌡️ Temp: ${temp} °C<br>
-                  ☁️ ${desc}
-                </div>
-              `;
+        function getWeatherIcon(description) {
+            description = description.toLowerCase();
+            if (description.includes("rain")) return 'fas fa-cloud-showers-heavy';
+            if (description.includes("clear")) return 'fas fa-sun';
+            if (description.includes("cloud") && description.includes("broken")) return 'fas fa-cloud-sun';
+            if (description.includes("cloud")) return 'fas fa-cloud';
+            if (description.includes("snow")) return 'fas fa-snowflake';
+            if (description.includes("mist") || description.includes("fog") || description.includes("haze")) return 'fas fa-smog';
+            if (description.includes("thunder")) return 'fas fa-bolt';
+            return 'fas fa-temperature-three-quarters';
+        }
+
+        function getWindDirection(deg) {
+            const directions = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+            const index = Math.round((deg % 360) / 45);
+            return directions[index % 8];
+        }
+
+        // View and Unit Control
+        function setUnit(unit) {
+            if (currentUnit === unit) return;
+            currentUnit = unit;
+            document.getElementById('celsiusBtn').classList.toggle('active', unit === 'C');
+            document.getElementById('fahrenheitBtn').classList.toggle('active', unit === 'F');
+            if (weatherData) {
+                renderForecast(weatherData);
+            }
+        }
+
+        function setView(view) {
+            if (currentView === view) return;
+            currentView = view;
+            document.getElementById('hourlyBtn').classList.toggle('active', view === 'hourly');
+            document.getElementById('dailyBtn').classList.toggle('active', view === 'daily');
+            if (weatherData) {
+                renderForecast(weatherData);
+            }
+        }
+
+        // --- AUTOSUGGESTION LOGIC ---
+        function handleSuggestions() {
+            const input = document.getElementById('cityInput');
+            const suggestionsBox = document.getElementById('suggestionsBox');
+            const query = input.value.trim();
+
+            if (query.length < 3) {
+                suggestionsBox.style.display = 'none';
+                return;
+            }
+
+            // --- NOTE: This is where you would call a fast Flask endpoint or external API ---
+            // e.g., fetch(`/suggest-city?q=${query}`).then(res => res.json()).then(showSuggestions);
+            
+            // --- DEMO LIST (Replace with live API for best UX) ---
+            const demoCities = [
+                "London, UK", "New York, US", "Tokyo, JP", 
+                "Paris, FR", "Chennai, IN", "Mumbai, IN", 
+                "Bangalore, IN", "Dubai, AE", "Sydney, AU"
+            ];
+            
+            const matches = demoCities.filter(city => city.toLowerCase().startsWith(query.toLowerCase()));
+            
+            showSuggestions(matches);
+        }
+
+        function showSuggestions(suggestions) {
+            const suggestionsBox = document.getElementById('suggestionsBox');
+            const ul = document.createElement('ul');
+            
+            if (suggestions.length === 0) {
+                suggestionsBox.style.display = 'none';
+                return;
+            }
+
+            suggestions.forEach(city => {
+                const li = document.createElement('li');
+                li.textContent = city;
+                li.onclick = () => {
+                    document.getElementById('cityInput').value = city.split(',')[0].trim();
+                    suggestionsBox.style.display = 'none';
+                    getWeather(); // Automatically search after selecting
+                };
+                ul.appendChild(li);
             });
-          }
 
-          resultDiv.innerHTML = content;
-          resultDiv.style.display = "block";
+            suggestionsBox.innerHTML = '';
+            suggestionsBox.appendChild(ul);
+            suggestionsBox.style.display = 'block';
+        }
+
+        function setupAutocompleteListeners() {
+            const input = document.getElementById('cityInput');
+            const suggestionsBox = document.getElementById('suggestionsBox');
+
+            // Show suggestions on input
+            input.addEventListener('input', handleSuggestions);
+
+            // Hide suggestions when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!suggestionsBox.contains(e.target) && e.target !== input) {
+                    suggestionsBox.style.display = 'none';
+                }
+            });
+            // Keep box open while hovering input
+            input.addEventListener('focus', () => {
+                if (input.value.length >= 3 && suggestionsBox.innerHTML.trim() !== '') {
+                     suggestionsBox.style.display = 'block';
+                }
+            });
+        }
+        // --- END AUTOSUGGESTION LOGIC ---
+
+        // Handles Geolocation request
+        function getWeatherByGeolocation() {
+            if (!navigator.geolocation) {
+                alert('Geolocation is not supported by your browser.');
+                return;
+            }
+
+            const resultDiv = document.getElementById("weatherResult");
+            resultDiv.innerHTML = `<p><i class="fas fa-map-marker-alt fa-spin"></i> Getting your location...</p>`;
+            resultDiv.classList.remove('show');
+            resultDiv.style.display = "block";
+            document.getElementById('cityInput').value = "Locating..."; 
+
+            navigator.geolocation.getCurrentPosition(position => {
+                const lat = position.coords.latitude;
+                const lon = position.coords.longitude;
+                
+                const forecastUrl = `/get-weather?lat=${lat}&lon=${lon}`;
+                
+                fetchAndProcess(forecastUrl, resultDiv, true);
+
+            }, (error) => {
+                let errorMsg = 'Unable to retrieve your location.';
+                if (error.code === error.PERMISSION_DENIED) {
+                    errorMsg = 'Location access denied by user. Please enter a city manually.';
+                } else if (error.code === error.TIMEOUT) {
+                    errorMsg = 'Location request timed out.';
+                }
+                alert(`Location Error: ${errorMsg}`); 
+                resultDiv.innerHTML = `<p>❌ ${errorMsg}</p>`;
+                document.getElementById('cityInput').value = "";
+            });
+        }
+
+        // Main function for City search
+        function getWeather() {
+            const city = document.getElementById("cityInput").value.trim();
+            if (!city) {
+                alert("Please enter a city name.");
+                return;
+            }
+
+            const forecastUrl = `/get-weather?city=${encodeURIComponent(city)}`;
+            const resultDiv = document.getElementById("weatherResult");
+
+            resultDiv.classList.remove('show');
+            resultDiv.innerHTML = `<p><i class="fas fa-spinner fa-spin"></i> Loading data...</p>`;
+            resultDiv.style.display = "block";
+            document.getElementById('viewToggle').style.display = 'none';
+            document.getElementById('unitToggle').style.display = 'none';
+            
+            fetchAndProcess(forecastUrl, resultDiv, false);
+        }
+
+        // Unified fetch and processing logic
+        function fetchAndProcess(forecastUrl, resultDiv, isGeolocation) {
+            
+            fetch(forecastUrl)
+                .then(response => {
+                    if (!response.ok) {
+                        return response.json().then(errorData => {
+                            throw new Error(errorData.message || `HTTP Error ${response.status}`);
+                        });
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    weatherData = data;
+                    processForecast(data, resultDiv, isGeolocation);
+                })
+                .catch(error => {
+                    console.error('Error fetching data:', error);
+                    const displayError = error.message || "Network connection failed or Flask server is down.";
+                    
+                    alert(`🚨 Data Fetch Error: ${displayError}. Please ensure your Flask server is running and the API key is correct.`);
+
+                    resultDiv.innerHTML = `<p>❌ Could not fetch weather data. Check console for details.</p>`;
+                });
+        }
+        
+        function processForecast(data, resultDiv, isGeolocation) {
+            if (data.cod !== "200") {
+                const errorMsg = data.message || `City **${document.getElementById("cityInput").value}** not found or API error.`;
+                resultDiv.innerHTML = `<p>❌ ${errorMsg}</p>`;
+                resultDiv.style.display = "block";
+                document.getElementById('viewToggle').style.display = 'none';
+                document.getElementById('unitToggle').style.display = 'none';
+                return;
+            }
+
+            document.getElementById('viewToggle').style.display = 'flex';
+            document.getElementById('unitToggle').style.display = 'flex';
+            
+            if (data.city && data.city.name && isGeolocation) {
+                document.getElementById('cityInput').value = data.city.name;
+            }
+
+            renderForecast(data);
+            
+            setTimeout(() => {
+                resultDiv.classList.add('show');
+            }, 10);
+        }
+
+        function renderForecast(data) {
+            const resultDiv = document.getElementById("weatherResult");
+            const today = new Date().toISOString().split("T")[0];
+            const unit = currentUnit;
+            const u = unitDisplay[unit];
+
+            let content = `<h2><i class="fas fa-map-marker-alt"></i> ${data.city.name}, ${data.city.country}</h2>`;
+            let forecastHTML = '';
+            
+            const firstItem = data.list[0];
+
+            // 1. Current Summary Section
+            const currentTemp = convertTemp(firstItem.main.temp, unit);
+            const currentFeelsLike = convertTemp(firstItem.main.feels_like, unit); 
+            const currentTempMin = convertTemp(firstItem.main.temp_min, unit);
+            const currentTempMax = convertTemp(firstItem.main.temp_max, unit);
+            const currentDesc = firstItem.weather[0].description.charAt(0).toUpperCase() + firstItem.weather[0].description.slice(1);
+            const currentHumidity = firstItem.main.humidity;
+            const currentWindSpeed = firstItem.wind ? firstItem.wind.speed : 'N/A';
+            const currentWindGust = firstItem.wind && firstItem.wind.gust ? firstItem.wind.gust : 'N/A'; 
+            const currentWindDeg = firstItem.wind ? firstItem.wind.deg : 0;
+            const currentWindDir = getWindDirection(currentWindDeg);
+            const currentPressure = firstItem.main.pressure ? firstItem.main.pressure : 'N/A';
+            const currentVisibility = firstItem.visibility ? (firstItem.visibility / 1000).toFixed(1) : 'N/A'; 
+            const currentClouds = firstItem.clouds ? firstItem.clouds.all : 'N/A'; 
+            const weatherIcon = getWeatherIcon(firstItem.weather[0].description);
+
+            // Structure the summary data using the new #summaryGrid
+            content += `
+                <div id="currentSummary">
+                    <h3><i class="${weatherIcon}"></i> Current Summary</h3>
+                    <div id="summaryGrid">
+                        
+                        <div class="summary-line">
+                            <span>Current Temp:</span> <strong>${currentTemp} ${u}</strong>
+                        </div>
+                        <div class="summary-line">
+                            <span>Conditions:</span> <strong>${currentDesc}</strong>
+                        </div>
+
+                        <div class="summary-line">
+                            <span><i class="fas fa-temperature-low"></i> Feels Like:</span> <strong>${currentFeelsLike} ${u}</strong>
+                        </div>
+                        <div class="summary-line">
+                            <span><i class="fas fa-tint"></i> Humidity:</span> <strong>${currentHumidity} %</strong>
+                        </div>
+
+                        <div class="summary-line">
+                            <span><i class="fas fa-long-arrow-alt-down temp-min-icon"></i> Low / <i class="fas fa-long-arrow-alt-up temp-max-icon"></i> High:</span> 
+                            <strong><span class="temp-min-icon">${currentTempMin} ${u}</span> / <span class="temp-max-icon">${currentTempMax} ${u}</span></strong>
+                        </div>
+                        <div class="summary-line">
+                            <span><i class="fas fa-eye"></i> Visibility:</span> <strong>${currentVisibility} km</strong>
+                        </div>
+
+                        <div class="summary-line">
+                            <span><i class="fas fa-tachometer-alt"></i> Pressure:</span> <strong>${currentPressure} hPa</strong>
+                        </div>
+                        <div class="summary-line">
+                            <span><i class="fas fa-cloud-sun"></i> Cloud Cover:</span> <strong>${currentClouds} %</strong>
+                        </div>
+
+                        <div class="summary-line">
+                            <span><i class="fas fa-wind"></i> Wind Speed:</span> 
+                            <strong>${currentWindSpeed} m/s</strong>
+                        </div>
+                        <div class="summary-line">
+                             <span><i class="fas fa-flag"></i> Gusts:</span> <strong>${currentWindGust} m/s</strong>
+                        </div>
+                        
+                        <div class="summary-line">
+                            <span><i class="fas fa-location-arrow"></i> Wind Direction:</span> 
+                            <strong>
+                                <span class="wind-arrow" style="transform: rotate(${currentWindDeg}deg);"><i class="fas fa-location-arrow"></i></span> ${currentWindDir}
+                            </strong>
+                        </div>
+                        
+                    </div>
+                </div>
+                <h3><i class="fas ${currentView === 'hourly' ? 'fa-clock' : 'fa-calendar-day'}"></i> ${currentView === 'hourly' ? 'Today\'s Hourly Forecast' : 'Next 5-Day Summary'}</h3>
+                <div id="forecastContainer">
+            `;
+
+            // 2. Conditional Forecast Content (Hourly or Daily)
+            if (currentView === 'hourly') {
+                const todayForecasts = data.list.filter(item => item.dt_txt.startsWith(today));
+                if (todayForecasts.length > 0) {
+                    todayForecasts.forEach(item => {
+                        const time = new Date(item.dt * 1000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+                        const temp = convertTemp(item.main.temp, unit);
+                        const feelsLike = convertTemp(item.main.feels_like, unit); 
+                        const pop = item.pop !== undefined ? (item.pop * 100).toFixed(0) : 'N/A'; // Probability of Precipitation
+                        const desc = item.weather[0].description.charAt(0).toUpperCase() + item.weather[0].description.slice(1);
+                        const iconClass = getWeatherIcon(item.weather[0].description);
+
+                        forecastHTML += `
+                            <div class="forecast-item">
+                                <strong>${time}</strong>
+                                <i class="icon-large ${iconClass}"></i>
+                                <span>${desc}</span>
+                                <strong>${temp} ${u}</strong>
+                                <div style="width: 100%; margin-top: 10px;">
+                                    <div class="hourly-detail">
+                                        <i class="fas fa-temperature-half"></i> Feels Like: ${feelsLike} ${u}
+                                    </div>
+                                    <div class="hourly-detail">
+                                        <i class="fas fa-umbrella"></i> PoP: ${pop} %
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                } else {
+                    forecastHTML = `<p>No hourly data available for today.</p>`;
+                }
+            } else if (currentView === 'daily') {
+                const dailyForecasts = {};
+
+                // Aggregate daily data (find min/max temp, and select main description)
+                data.list.forEach(item => {
+                    const dateKey = item.dt_txt.split(" ")[0];
+                    const dayName = new Date(item.dt * 1000).toLocaleDateString('en-US', { weekday: 'short' });
+                    
+                    if (!dailyForecasts[dateKey]) {
+                        dailyForecasts[dateKey] = {
+                            date: dateKey,
+                            day: dayName,
+                            temp_min: Infinity,
+                            temp_max: -Infinity,
+                            description: item.weather[0].description,
+                            count: 0
+                        };
+                    }
+                    dailyForecasts[dateKey].temp_min = Math.min(dailyForecasts[dateKey].temp_min, item.main.temp_min);
+                    dailyForecasts[dateKey].temp_max = Math.max(dailyForecasts[dateKey].temp_max, item.main.temp_max);
+                    dailyForecasts[dateKey].count++;
+                });
+
+                let dayCount = 0;
+                for (const dateKey in dailyForecasts) {
+                    if (dayCount < 5 && dateKey !== today) { 
+                        const daily = dailyForecasts[dateKey];
+                        const tempMin = convertTemp(daily.temp_min, unit);
+                        const tempMax = convertTemp(daily.temp_max, unit);
+                        const iconClass = getWeatherIcon(daily.description);
+                        const desc = daily.description.charAt(0).toUpperCase() + daily.description.slice(1);
+
+                        forecastHTML += `
+                            <div class="forecast-item day-forecast-item">
+                                <strong>${daily.day}</strong>
+                                <p style="font-size: 0.9em; margin: 5px 0;">${dateKey.substring(5)}</p>
+                                <i class="icon-large ${iconClass}"></i>
+                                <span style="font-size: 0.9em;">${desc}</span>
+                                <p>
+                                    <span class="temp-max-icon" style="font-weight: bold;">${tempMax}${u}</span> / 
+                                    <span class="temp-min-icon">${tempMin}${u}</span>
+                                </p>
+                            </div>
+                        `;
+                        dayCount++;
+                    }
+                }
+                if (dayCount === 0) {
+                    forecastHTML = `<p>No 5-day summary data available.</p>`;
+                }
+            }
+
+            content += forecastHTML;
+            content += `</div>`; // Close forecastContainer div
+
+            resultDiv.innerHTML = content;
+            resultDiv.style.display = "block";
+        }
+
+        // Initialize with default view/unit and listeners
+        document.addEventListener('DOMContentLoaded', () => {
+            setUnit('C');
+            setView('hourly');
+            setupAutocompleteListeners(); // Initialize autocomplete feature
         });
-    }
-  </script>
+    </script>
 
 </body>
 </html>
