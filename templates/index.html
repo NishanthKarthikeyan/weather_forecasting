@@ -4,13 +4,20 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>Super Advanced Weather Forecast</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
+        /* CSS Variables for Dynamic Colors */
+        :root {
+            --color-cold: #4c66f0;
+            --color-normal: #1a2a6c;
+            --color-hot: #f04b4c;
+        }
+
         /* General Styles */
         body {
             font-family: 'Poppins', sans-serif;
-            /* Enhanced gradient for better contrast with glass effects */
             background: linear-gradient(135deg, #89a7f3 0%, #c1e8ff 100%);
             display: flex;
             flex-direction: column;
@@ -18,7 +25,7 @@
             padding: 30px 10px;
             min-height: 100vh;
             margin: 0;
-            color: #1a2a6c; /* Darker primary text color */
+            color: #1a2a6c;
         }
 
         h1 {
@@ -27,11 +34,18 @@
             font-size: 2.5em;
             text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
         }
+        
+        h3 {
+            color: #1a2a6c;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 5px;
+            margin-top: 15px;
+        }
 
         /* Glassmorphism Containers */
         .controls-panel, #weatherResult {
-            backdrop-filter: blur(10px); /* Frosted glass effect */
-            background: rgba(255, 255, 255, 0.5); /* Semi-transparent white */
+            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.5);
             border: 1px solid rgba(255, 255, 255, 0.3);
             border-radius: 20px;
             box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
@@ -44,7 +58,7 @@
             gap: 15px;
             margin-bottom: 30px;
             padding: 25px;
-            position: relative; /* Needed for suggestions box positioning */
+            position: relative;
         }
         
         .input-group, .toggle-group, .unit-group {
@@ -54,14 +68,14 @@
             flex-wrap: wrap;
         }
 
-        /* --- New Autocomplete Styles --- */
+        /* Autocomplete Styles (Retained) */
         #searchContainer {
-            position: relative; /* Parent for suggestionsBox */
+            position: relative;
         }
         
         #suggestionsBox {
             position: absolute;
-            top: 100%; /* Position right below the input */
+            top: 100%;
             left: 0;
             width: 100%;
             max-height: 200px;
@@ -93,7 +107,6 @@
             background-color: #f0f8ff;
             color: #1a2a6c;
         }
-        /* --- End New Autocomplete Styles --- */
 
         input {
             padding: 12px 15px;
@@ -171,29 +184,66 @@
             border-radius: 12px;
             border-left: 5px solid #4a90e2;
         }
+        
+        /* New Current Condition Badge */
+        #currentConditions {
+            display: flex;
+            align-items: center;
+            justify-content: space-around;
+            background: #4a90e2;
+            color: white;
+            padding: 15px 10px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            font-size: 1.1em;
+            transition: background 0.5s;
+        }
+        
+        /* Temperature Dependent Colors */
+        #currentConditions.cold { background: var(--color-cold); }
+        #currentConditions.normal { background: #4a90e2; }
+        #currentConditions.hot { background: var(--color-hot); }
+
+        #currentConditions .icon-large {
+            font-size: 3em;
+            color: white;
+        }
+        
+        #currentConditions strong {
+            font-size: 2em;
+            font-weight: 700;
+        }
 
         #summaryGrid {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 10px 30px; 
+            padding-top: 10px;
         }
         
         .summary-line {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 5px 0;
+            padding: 7px 0;
             font-size: 1em;
-            border-bottom: 1px dotted #ccc;
+            color: #333;
+            border-bottom: 1px dotted #e0e0e0;
         }
         
-        .summary-line:last-child {
-            border-bottom: none;
+        .summary-line i {
+            color: #4a90e2;
         }
 
         /* Visual styling for high/low temps */
-        .temp-max-icon { color: #f04b4c; } /* Red for High */
-        .temp-min-icon { color: #4c66f0; } /* Blue for Low */
+        .temp-max-icon { color: var(--color-hot); }
+        .temp-min-icon { color: var(--color-cold); }
+        .pressure-trend-icon { 
+            display: inline-block;
+            margin-left: 5px;
+            font-size: 1.1em;
+        }
 
         .wind-arrow {
             display: inline-block;
@@ -201,7 +251,7 @@
             margin-left: 5px;
         }
 
-        /* Forecast Container Styles (Scroll Shadow UX) */
+        /* Forecast Container Styles (Scrollbar styling applied) */
         #forecastContainer {
             display: flex;
             flex-wrap: wrap;
@@ -213,11 +263,24 @@
             background-color: rgba(248, 248, 248, 0.5); 
             border-radius: 10px;
             
-            /* Scroll shadow effect */
             box-shadow: inset 0 6px 6px -6px rgba(0,0,0,0.1), 
                         inset 0 -6px 6px -6px rgba(0,0,0,0.1);
         }
         
+        /* Custom Scrollbar Styles */
+        #forecastContainer::-webkit-scrollbar {
+            width: 8px;
+        }
+        #forecastContainer::-webkit-scrollbar-thumb {
+            background-color: #4a90e2;
+            border-radius: 4px;
+        }
+        #forecastContainer::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 4px;
+        }
+
+
         .forecast-item {
             background: white;
             border: 1px solid rgba(224, 224, 224, 0.5);
@@ -230,6 +293,8 @@
             flex-direction: column;
             justify-content: space-between;
             transition: transform 0.2s;
+            cursor: pointer;
+            position: relative;
         }
         
         .forecast-item:hover {
@@ -242,6 +307,7 @@
             flex: 1 1 150px;
             max-width: 180px;
             border: 2px solid #a1c4fd;
+            padding: 10px;
         }
 
         .icon-large {
@@ -251,7 +317,7 @@
         }
 
         .hourly-detail {
-            font-size: 0.85em;
+            font-size: 0.8em; 
             color: #444; 
             margin-top: 5px;
             text-align: left;
@@ -260,7 +326,78 @@
             gap: 5px;
         }
 
-        /* Footer Style */
+        .pop-bar-container {
+            width: 100%;
+            height: 5px;
+            background: #e0e0e0;
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 3px;
+        }
+        
+        .pop-fill {
+            height: 100%;
+            background-color: #4c66f0;
+            transition: width 0.5s ease-out;
+        }
+
+        /* UV Index Risk Styling */
+        .uv-low { color: green; font-weight: 700;}
+        .uv-moderate { color: orange; font-weight: 700;}
+        .uv-high { color: red; font-weight: 700;}
+
+        /* Modal/Pop-up Styles (Retained) */
+        #modalOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+
+        #detailModal {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            transform: scale(0.9);
+            transition: transform 0.3s ease-out;
+            color: #333;
+        }
+        
+        #detailModal.open {
+            transform: scale(1);
+        }
+        
+        #modalClose {
+            float: right;
+            font-size: 1.5em;
+            cursor: pointer;
+            color: #aaa;
+        }
+
+        #modalContent h4 {
+            margin-top: 0;
+            color: #1a2a6c;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+        }
+
+        .modal-data-line {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 0;
+            border-bottom: 1px dotted #eee;
+        }
+        /* Footer Style (Retained) */
         footer {
             margin-top: auto;
             padding: 20px;
@@ -280,7 +417,14 @@
     </style>
 </head>
 <body>
-
+    
+    <div id="modalOverlay" onclick="closeHourlyDetail()">
+        <div id="detailModal" onclick="event.stopPropagation()">
+            <span id="modalClose" onclick="closeHourlyDetail()">&times;</span>
+            <div id="modalContent">
+                </div>
+        </div>
+    </div>
     <h1><i class="fas fa-cloud-sun-rain"></i> Super Advanced Weather App</h1>
 
     <div class="controls-panel">
@@ -323,7 +467,50 @@
             'F': '°F'
         };
 
-        // Utility functions
+        // --- DATA UTILITIES ---
+        
+        // Converts temperature and returns colored class for current conditions
+        function getTempClass(tempC) {
+            if (tempC <= 5) return 'cold'; // Cold threshold (5°C or 41°F)
+            if (tempC >= 30) return 'hot'; // Hot threshold (30°C or 86°F)
+            return 'normal';
+        }
+        
+        // Calculates Wind Chill (only for temps <= 10°C and wind >= 4.8 km/h or 1.3 m/s)
+        function calculateWindChill(tempC, windSpeed_ms) {
+            if (tempC > 10 || windSpeed_ms < 1.3) return 'N/A';
+            
+            // Formula requires wind speed in km/h. 1 m/s ≈ 3.6 km/h
+            const windSpeed_kmh = windSpeed_ms * 3.6;
+            
+            // New formula based on temperature in Celsius and wind speed in km/h
+            const windChill = 13.12 + (0.6215 * tempC) - (11.37 * Math.pow(windSpeed_kmh, 0.16)) + (0.3965 * tempC * Math.pow(windSpeed_kmh, 0.16));
+            return windChill.toFixed(1);
+        }
+
+        // Calculates Heat Index (for temps >= 27°C, simplified for FE)
+        function calculateHeatIndex(tempC, humidity) {
+             if (tempC < 27) return 'N/A';
+             // Simple approximation for Heat Index (not highly accurate, but provides metric)
+             const tempF = (tempC * 9 / 5) + 32;
+             const hiF = 0.5 * (tempF + 61.0 + ((tempF - 68.0) * 1.2) + (humidity * 0.09));
+             
+             if (hiF < 80) return 'N/A';
+             
+             const hiC = (hiF - 32) * 5 / 9;
+             return hiC.toFixed(1);
+        }
+        
+        // Assigns descriptive risk based on UV Index (0-11+)
+        function getUVRisk(uv) {
+            if (uv <= 2) return { text: 'Low', class: 'uv-low' };
+            if (uv <= 5) return { text: 'Moderate', class: 'uv-low' };
+            if (uv <= 7) return { text: 'High', class: 'uv-moderate' };
+            if (uv <= 10) return { text: 'Very High', class: 'uv-high' };
+            return { text: 'Extreme', class: 'uv-high' };
+        }
+
+        // Standard Utilities (Retained)
         function convertTemp(tempC, targetUnit) {
             const temp = parseFloat(tempC);
             if (isNaN(temp)) return 'N/A';
@@ -351,6 +538,22 @@
             const index = Math.round((deg % 360) / 45);
             return directions[index % 8];
         }
+        
+        // Utility to format time (e.g., 08:30 AM)
+        function formatTime(timestamp) {
+            return new Date(timestamp * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        }
+        
+        function getPressureTrend(currentPressure, nextPressure) {
+            if (currentPressure > nextPressure + 1) { 
+                return { icon: 'fa-arrow-down', color: 'var(--color-cold)' };
+            } else if (currentPressure < nextPressure - 1) { 
+                return { icon: 'fa-arrow-up', color: 'var(--color-hot)' };
+            } else {
+                return { icon: 'fa-minus', color: 'gray' }; 
+            }
+        }
+
 
         // View and Unit Control
         function setUnit(unit) {
@@ -373,7 +576,7 @@
             }
         }
 
-        // --- AUTOSUGGESTION LOGIC ---
+        // --- AUTOSUGGESTION LOGIC (Retained) ---
         function handleSuggestions() {
             const input = document.getElementById('cityInput');
             const suggestionsBox = document.getElementById('suggestionsBox');
@@ -384,10 +587,6 @@
                 return;
             }
 
-            // --- NOTE: This is where you would call a fast Flask endpoint or external API ---
-            // e.g., fetch(`/suggest-city?q=${query}`).then(res => res.json()).then(showSuggestions);
-            
-            // --- DEMO LIST (Replace with live API for best UX) ---
             const demoCities = [
                 "London, UK", "New York, US", "Tokyo, JP", 
                 "Paris, FR", "Chennai, IN", "Mumbai, IN", 
@@ -414,7 +613,7 @@
                 li.onclick = () => {
                     document.getElementById('cityInput').value = city.split(',')[0].trim();
                     suggestionsBox.style.display = 'none';
-                    getWeather(); // Automatically search after selecting
+                    getWeather();
                 };
                 ul.appendChild(li);
             });
@@ -428,16 +627,13 @@
             const input = document.getElementById('cityInput');
             const suggestionsBox = document.getElementById('suggestionsBox');
 
-            // Show suggestions on input
             input.addEventListener('input', handleSuggestions);
 
-            // Hide suggestions when clicking outside
             document.addEventListener('click', (e) => {
                 if (!suggestionsBox.contains(e.target) && e.target !== input) {
                     suggestionsBox.style.display = 'none';
                 }
             });
-            // Keep box open while hovering input
             input.addEventListener('focus', () => {
                 if (input.value.length >= 3 && suggestionsBox.innerHTML.trim() !== '') {
                      suggestionsBox.style.display = 'block';
@@ -445,6 +641,98 @@
             });
         }
         // --- END AUTOSUGGESTION LOGIC ---
+
+        // --- HOURLY DETAIL MODAL LOGIC ---
+        function showHourlyDetail(dt_txt) {
+            const item = weatherData.list.find(i => i.dt_txt === dt_txt);
+            if (!item) return;
+
+            const modalOverlay = document.getElementById('modalOverlay');
+            const modalContent = document.getElementById('modalContent');
+            const unit = currentUnit;
+            const u = unitDisplay[unit];
+            
+            const tempC = item.main.temp;
+            const temp = convertTemp(tempC, unit);
+            const feelsLike = convertTemp(item.main.feels_like, unit);
+            const tempMin = convertTemp(item.main.temp_min, unit);
+            const tempMax = convertTemp(item.main.temp_max, unit);
+            const pop = item.pop !== undefined ? (item.pop * 100).toFixed(0) : 'N/A';
+            const humidity = item.main.humidity;
+            const pressure = item.main.pressure;
+            const seaPressure = item.main.sea_level || pressure;
+            const groundPressure = item.main.grnd_level || pressure;
+            const visibility = item.visibility ? (item.visibility / 1000).toFixed(1) : 'N/A';
+            const windSpeed = item.wind ? item.wind.speed : 'N/A';
+            const windGust = item.wind && item.wind.gust ? item.wind.gust : 'N/A';
+            const windDeg = item.wind ? item.wind.deg : 0;
+            const windDir = getWindDirection(windDeg);
+            const clouds = item.clouds ? item.clouds.all : 'N/A';
+            
+            // Advanced calculations
+            const advancedTemp = tempC <= 10 ? calculateWindChill(tempC, windSpeed) : calculateHeatIndex(tempC, humidity);
+            const advancedLabel = tempC <= 10 ? 'Wind Chill' : (tempC >= 27 ? 'Heat Index' : 'N/A');
+
+            const time = new Date(item.dt * 1000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+            const date = new Date(item.dt * 1000).toLocaleDateString();
+            const desc = item.weather[0].description.charAt(0).toUpperCase() + item.weather[0].description.slice(1);
+            const iconClass = getWeatherIcon(item.weather[0].description);
+
+            // Simulate pressure trend for modal based on comparison
+            const nextItem = weatherData.list[weatherData.list.indexOf(item) + 1];
+            let pressureTrendHTML = '';
+            if (nextItem) {
+                const trend = getPressureTrend(pressure, nextItem.main.pressure);
+                pressureTrendHTML = `<i class="fas ${trend.icon} pressure-trend-icon" style="color: ${trend.color};"></i>`;
+            }
+
+
+            modalContent.innerHTML = `
+                <h4><i class="${iconClass}"></i> ${desc} Detail - ${time} (${date})</h4>
+                <div class="modal-data-line"><span>Temperature:</span> <strong>${temp} ${u}</strong></div>
+                <div class="modal-data-line"><span>Feels Like:</span> <strong>${feelsLike} ${u}</strong></div>
+                
+                <div class="modal-data-line">
+                    <span>${advancedLabel}:</span> 
+                    <strong>${advancedTemp !== 'N/A' ? advancedTemp + ' ' + u : 'N/A'}</strong>
+                </div>
+
+                <div class="modal-data-line">
+                    <span>Low / High (3h):</span> 
+                    <strong>
+                        <span class="temp-min-icon">${tempMin} ${u}</span> / <span class="temp-max-icon">${tempMax} ${u}</span>
+                    </strong>
+                </div>
+                <div class="modal-data-line"><span><i class="fas fa-umbrella"></i> PoP (Rain Chance):</span> <strong>${pop} %</strong></div>
+                <div class="modal-data-line"><span><i class="fas fa-tint"></i> Humidity:</span> <strong>${humidity} %</strong></div>
+                <div class="modal-data-line"><span><i class="fas fa-eye"></i> Visibility:</span> <strong>${visibility} km</strong></div>
+                <div class="modal-data-line"><span><i class="fas fa-cloud"></i> Cloud Cover:</span> <strong>${clouds} %</strong></div>
+                <div class="modal-data-line"><span><i class="fas fa-wind"></i> Wind Speed:</span> <strong>${windSpeed} m/s</strong></div>
+                <div class="modal-data-line"><span><i class="fas fa-flag"></i> Wind Gusts:</span> <strong>${windGust} m/s</strong></div>
+                <div class="modal-data-line">
+                    <span><i class="fas fa-location-arrow"></i> Wind Direction:</span> 
+                    <strong>
+                        <span class="wind-arrow" style="transform: rotate(${windDeg}deg);"><i class="fas fa-location-arrow"></i></span> 
+                        (${windDir})
+                    </strong>
+                </div>
+                <div class="modal-data-line"><span><i class="fas fa-tachometer-alt"></i> Pressure (Atm):</span> <strong>${pressure} hPa ${pressureTrendHTML}</strong></div>
+                <div class="modal-data-line"><span><i class="fas fa-ship"></i> Pressure (Sea):</span> <strong>${seaPressure} hPa</strong></div>
+                <div class="modal-data-line"><span><i class="fas fa-mountain"></i> Pressure (Ground):</span> <strong>${groundPressure} hPa</strong></div>
+            `;
+
+            modalOverlay.style.display = 'flex';
+            document.getElementById('detailModal').classList.add('open');
+        }
+
+        function closeHourlyDetail() {
+            document.getElementById('detailModal').classList.remove('open');
+            setTimeout(() => {
+                 document.getElementById('modalOverlay').style.display = 'none';
+            }, 300); // Wait for transition
+        }
+        // --- END MODAL LOGIC ---
+
 
         // Handles Geolocation request
         function getWeatherByGeolocation() {
@@ -562,7 +850,8 @@
             const firstItem = data.list[0];
 
             // 1. Current Summary Section
-            const currentTemp = convertTemp(firstItem.main.temp, unit);
+            const tempC = firstItem.main.temp;
+            const currentTemp = convertTemp(tempC, unit);
             const currentFeelsLike = convertTemp(firstItem.main.feels_like, unit); 
             const currentTempMin = convertTemp(firstItem.main.temp_min, unit);
             const currentTempMax = convertTemp(firstItem.main.temp_max, unit);
@@ -576,33 +865,63 @@
             const currentVisibility = firstItem.visibility ? (firstItem.visibility / 1000).toFixed(1) : 'N/A'; 
             const currentClouds = firstItem.clouds ? firstItem.clouds.all : 'N/A'; 
             const weatherIcon = getWeatherIcon(firstItem.weather[0].description);
+            
+            // Advanced calculations/simulations
+            const currentTempClass = getTempClass(tempC);
+            const advancedTemp = tempC <= 10 ? calculateWindChill(tempC, currentWindSpeed) : calculateHeatIndex(tempC, currentHumidity);
+            const advancedLabel = tempC <= 10 ? 'Wind Chill' : (tempC >= 27 ? 'Heat Index' : 'N/A');
+            
+            // Sunrise/Sunset Times
+            const sunrise = data.city.sunrise ? formatTime(data.city.sunrise) : 'N/A';
+            const sunset = data.city.sunset ? formatTime(data.city.sunset) : 'N/A';
+            
+            // Simulate UV index for visualization
+            const uvIndex = 7; // Example value 
+            const uvRisk = getUVRisk(uvIndex);
+
 
             // Structure the summary data using the new #summaryGrid
             content += `
                 <div id="currentSummary">
-                    <h3><i class="${weatherIcon}"></i> Current Summary</h3>
+                    
+                    <div id="currentConditions" class="${currentTempClass}">
+                        <i class="icon-large ${weatherIcon}"></i>
+                        <div>
+                            <strong>${currentTemp} ${u}</strong>
+                            <p style="margin: 0; font-size: 0.9em;">${currentDesc}</p>
+                        </div>
+                    </div>
+                    
                     <div id="summaryGrid">
                         
-                        <div class="summary-line">
-                            <span>Current Temp:</span> <strong>${currentTemp} ${u}</strong>
-                        </div>
-                        <div class="summary-line">
-                            <span>Conditions:</span> <strong>${currentDesc}</strong>
-                        </div>
-
                         <div class="summary-line">
                             <span><i class="fas fa-temperature-low"></i> Feels Like:</span> <strong>${currentFeelsLike} ${u}</strong>
                         </div>
                         <div class="summary-line">
                             <span><i class="fas fa-tint"></i> Humidity:</span> <strong>${currentHumidity} %</strong>
                         </div>
-
+                        
                         <div class="summary-line">
                             <span><i class="fas fa-long-arrow-alt-down temp-min-icon"></i> Low / <i class="fas fa-long-arrow-alt-up temp-max-icon"></i> High:</span> 
                             <strong><span class="temp-min-icon">${currentTempMin} ${u}</span> / <span class="temp-max-icon">${currentTempMax} ${u}</span></strong>
                         </div>
                         <div class="summary-line">
+                            <span><i class="fas fa-sun"></i> UV Index:</span> <strong class="${uvRisk.class}">${uvRisk.text} (${uvIndex})</strong>
+                        </div>
+                        
+                        <div class="summary-line">
+                            <span><i class="fas fa-wind-turbine"></i> ${advancedLabel}:</span> 
+                            <strong>${advancedTemp !== 'N/A' ? advancedTemp + ' ' + u : 'N/A'}</strong>
+                        </div>
+                        <div class="summary-line">
                             <span><i class="fas fa-eye"></i> Visibility:</span> <strong>${currentVisibility} km</strong>
+                        </div>
+                        
+                        <div class="summary-line">
+                            <span><i class="fas fa-sunrise"></i> Sunrise:</span> <strong>${sunrise}</strong>
+                        </div>
+                        <div class="summary-line">
+                            <span><i class="fas fa-sunset"></i> Sunset:</span> <strong>${sunset}</strong>
                         </div>
 
                         <div class="summary-line">
@@ -629,13 +948,14 @@
                         
                     </div>
                 </div>
-                <h3><i class="fas ${currentView === 'hourly' ? 'fa-clock' : 'fa-calendar-day'}"></i> ${currentView === 'hourly' ? 'Today\'s Hourly Forecast' : 'Next 5-Day Summary'}</h3>
+                <h3><i class="fas ${currentView === 'hourly' ? 'fa-chart-bar' : 'fa-calendar-day'}"></i> ${currentView === 'hourly' ? 'Today\'s Hourly Details' : 'Next 5-Day Summary'}</h3>
                 <div id="forecastContainer">
             `;
 
-            // 2. Conditional Forecast Content (Hourly or Daily)
+            // 2. Conditional Forecast Content (Hourly Cards or Daily Cards)
             if (currentView === 'hourly') {
                 const todayForecasts = data.list.filter(item => item.dt_txt.startsWith(today));
+                
                 if (todayForecasts.length > 0) {
                     todayForecasts.forEach(item => {
                         const time = new Date(item.dt * 1000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
@@ -645,8 +965,9 @@
                         const desc = item.weather[0].description.charAt(0).toUpperCase() + item.weather[0].description.slice(1);
                         const iconClass = getWeatherIcon(item.weather[0].description);
 
-                        forecastHTML += `
-                            <div class="forecast-item">
+                        // Added onclick handler to show detailed modal
+                        content += `
+                            <div class="forecast-item" onclick="showHourlyDetail('${item.dt_txt}')">
                                 <strong>${time}</strong>
                                 <i class="icon-large ${iconClass}"></i>
                                 <span>${desc}</span>
@@ -658,17 +979,20 @@
                                     <div class="hourly-detail">
                                         <i class="fas fa-umbrella"></i> PoP: ${pop} %
                                     </div>
+                                    <div class="pop-bar-container">
+                                        <div class="pop-fill" style="width: ${pop}%;"></div>
+                                    </div>
                                 </div>
                             </div>
                         `;
                     });
                 } else {
-                    forecastHTML = `<p>No hourly data available for today.</p>`;
+                    content += `<p>No hourly data available for today.</p>`;
                 }
+                content += `</div>`; // Close container for cards
             } else if (currentView === 'daily') {
                 const dailyForecasts = {};
 
-                // Aggregate daily data (find min/max temp, and select main description)
                 data.list.forEach(item => {
                     const dateKey = item.dt_txt.split(" ")[0];
                     const dayName = new Date(item.dt * 1000).toLocaleDateString('en-US', { weekday: 'short' });
@@ -689,6 +1013,21 @@
                 });
 
                 let dayCount = 0;
+                let minTempGlobal = Infinity;
+                let maxTempGlobal = -Infinity;
+                
+                // First pass to find global min/max for scaling the visual bars
+                for (const dateKey in dailyForecasts) {
+                    if (dateKey !== today) {
+                        minTempGlobal = Math.min(minTempGlobal, dailyForecasts[dateKey].temp_min);
+                        maxTempGlobal = Math.max(maxTempGlobal, dailyForecasts[dateKey].temp_max);
+                    }
+                }
+                const tempRange = maxTempGlobal - minTempGlobal;
+                const baseTemp = minTempGlobal - 5; 
+
+                forecastHTML += `<div id="forecastContainer">`; // Open container for cards
+
                 for (const dateKey in dailyForecasts) {
                     if (dayCount < 5 && dateKey !== today) { 
                         const daily = dailyForecasts[dateKey];
@@ -696,29 +1035,40 @@
                         const tempMax = convertTemp(daily.temp_max, unit);
                         const iconClass = getWeatherIcon(daily.description);
                         const desc = daily.description.charAt(0).toUpperCase() + daily.description.slice(1);
-
+                        
+                        // Calculate visual bar properties
+                        const barWidth = 100;
+                        const minOffset = ((daily.temp_min - baseTemp) / (tempRange + 10)) * barWidth;
+                        const barLength = ((daily.temp_max - daily.temp_min) / (tempRange + 10)) * barWidth;
+                        
                         forecastHTML += `
                             <div class="forecast-item day-forecast-item">
                                 <strong>${daily.day}</strong>
                                 <p style="font-size: 0.9em; margin: 5px 0;">${dateKey.substring(5)}</p>
                                 <i class="icon-large ${iconClass}"></i>
                                 <span style="font-size: 0.9em;">${desc}</span>
-                                <p>
-                                    <span class="temp-max-icon" style="font-weight: bold;">${tempMax}${u}</span> / 
-                                    <span class="temp-min-icon">${tempMin}${u}</span>
+                                <div style="height: 10px; margin: 10px 0 5px 0; background: #eee; border-radius: 5px; overflow: hidden;">
+                                    <div style="
+                                        height: 100%;
+                                        background: linear-gradient(to right, #4c66f0, #f04b4c);
+                                        width: ${barLength}%;
+                                        margin-left: ${minOffset}%;
+                                        border-radius: 5px;
+                                    "></div>
+                                </div>
+                                <p style="display: flex; justify-content: space-between; width: 100%; margin-top: 5px; padding: 0 5px;">
+                                    <span class="temp-min-icon" style="font-size:0.9em; font-weight: 600;">${tempMin}${u}</span> 
+                                    <span class="temp-max-icon" style="font-weight: bold; font-size:0.9em;">${tempMax}${u}</span>
                                 </p>
                             </div>
                         `;
                         dayCount++;
                     }
                 }
-                if (dayCount === 0) {
-                    forecastHTML = `<p>No 5-day summary data available.</p>`;
-                }
+                forecastHTML += `</div>`; // Close container for cards
+                
+                content += forecastHTML;
             }
-
-            content += forecastHTML;
-            content += `</div>`; // Close forecastContainer div
 
             resultDiv.innerHTML = content;
             resultDiv.style.display = "block";
